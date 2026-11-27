@@ -113,6 +113,18 @@ if "REXGLUE_ANDROID_FLOAT_FROM_CHARS" not in numeric:
     numeric = numeric.replace(old_float_guard, new_float_guard, 1)
     numeric_path.write_text(numeric, encoding="utf-8")
 
+# Android's NDK libc++ has the same missing clock_cast customization as Apple libc++.
+# The SDK already provides the fallback under __APPLE__; enable it for __ANDROID__ too.
+chrono_path = root / "include/rex/chrono/chrono.h"
+chrono = chrono_path.read_text(encoding="utf-8")
+old_clock_guard = "#ifdef __APPLE__\n// Apple libc++ does not expose clock_time_conversion or clock_cast."
+new_clock_guard = "#if defined(__APPLE__) || defined(__ANDROID__)\n// Apple and Android libc++ do not expose clock_time_conversion or clock_cast."
+if new_clock_guard not in chrono:
+    if old_clock_guard not in chrono:
+        raise SystemExit("Android patch: chrono.h clock_cast fallback guard changed")
+    chrono = chrono.replace(old_clock_guard, new_clock_guard, 1)
+    chrono_path.write_text(chrono, encoding="utf-8")
+
 # WindowSDL must create the Android surface from SDL's ANativeWindow property.
 window_path = root / "src/ui/window_sdl.cpp"
 window = window_path.read_text(encoding="utf-8")
