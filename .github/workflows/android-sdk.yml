@@ -26,6 +26,10 @@ jobs:
           ndk-version: 27.2.12479018
           cmake-version: 3.31.6
 
+      - name: Export Android NDK path
+        shell: bash
+        run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
       - name: Check out ReXGlue SDK v0.10.0
         uses: actions/checkout@v4
         with:
