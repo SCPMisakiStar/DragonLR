@@ -79,11 +79,15 @@ namespace dbz3::survivors { void CrearPrueba(rex::ui::ImGuiDrawer* drawer); bool
 // Plataformas fuera de PC (Android, Switch): su capa se engancha aqui sin parchear este archivo. El
 // `platform.cmake` de DBZ3_PLATFORM_DIR (CMakeLists.txt) define DBZ3_PLATFORM_HEADER, una cabecera que
 // puede definir:
-//   DBZ3_PLATFORM_PRE_SETUP(config)  tras leer dbz3_user.toml (p. ej. elegir otro renderizador)
+//   DBZ3_PLATFORM_EARLY_INIT()        antes de leer dbz3_user.toml (rutas privadas Android)
+ //   DBZ3_PLATFORM_PRE_SETUP(config)  tras leer dbz3_user.toml (p. ej. elegir otro renderizador)
 //   DBZ3_PLATFORM_APP_MEMBERS        metodos que se anaden a Dbz3App (overrides de rex::ReXApp)
 //   DBZ3_PLATFORM_SHUTDOWN()         al cerrar, antes de nuestra limpieza
 #ifdef DBZ3_PLATFORM_HEADER
 #include DBZ3_PLATFORM_HEADER
+#endif
+#ifndef DBZ3_PLATFORM_EARLY_INIT
+#define DBZ3_PLATFORM_EARLY_INIT() ((void)0)
 #endif
 #ifndef DBZ3_PLATFORM_PRE_SETUP
 #define DBZ3_PLATFORM_PRE_SETUP(config) ((void)0)
@@ -658,6 +662,9 @@ public:
         config.audio_factory = REX_AUDIO_BACKEND(rex::audio::sdl::SDLAudioSystem);
         config.input_factory = REX_INPUT_BACKEND(rex::input::CreateDefaultInputSystem);
         config.kernel_init = rex::kernel::InitializeKernel;
+
+        // Resolve writable Android app storage before any settings or save path is computed.
+        DBZ3_PLATFORM_EARLY_INIT();
 
         // User settings: load dbz3_user.toml (must run after the SDK config
         // so user values win) and forward the friendly cvars onto the SDK's
