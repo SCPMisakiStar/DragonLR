@@ -511,6 +511,77 @@ void Fiber::Destroy() {
 #endif  // REX_PLATFORM_ANDROID
 ''', encoding="utf-8")
 
+# Android's shared-memory API is needed by file-backed guest memory. Load it
+# lazily inside the backend, not from the host app: rexcore internals are not
+# part of the public runtime ABI.
+patch(
+    "src/core/memory_posix.cpp",
+    "#include <functional>\n#include <mutex>\n#include <string>",
+    "#include <functional>\n#include <string>",
+    "Android memory initialization mutex",
+)
+patch(
+    "src/core/memory_posix.cpp",
+    """static std::mutex android_init_mutex;
+static void* libandroid_;
+// API 26+.
+static int (*android_ASharedMemory_create_)(const char* name, size_t size);
+
+void AndroidInitialize() {
+  std::lock_guard lock(android_init_mutex);
+  if (rex::GetAndroidApiLevel() >= 26 && !android_ASharedMemory_create_) {
+    if (!libandroid_) {
+      libandroid_ = dlopen("libandroid.so", RTLD_NOW);
+    }
+    if (libandroid_) {
+      android_ASharedMemory_create_ = reinterpret_cast<decltype(android_ASharedMemory_create_)>(
+          dlsym(libandroid_, "ASharedMemory_create"));
+    }
+    assert_not_null(android_ASharedMemory_create_);
+  }
+}
+
+// Keep libandroid loaded for process lifetime; CreateFileMappingHandle may be
+// called from worker threads until the runtime has fully shut down.
+void AndroidShutdown() {}
+""",
+    """// May be null if no dynamically loaded functions are required.
+static void* libandroid_;
+// API 26+.
+static int (*android_ASharedMemory_create_)(const char* name, size_t size);
+
+void AndroidInitialize() {
+  if (rex::GetAndroidApiLevel() >= 26) {
+    libandroid_ = dlopen("libandroid.so", RTLD_NOW);
+    assert_not_null(libandroid_);
+    if (libandroid_) {
+      android_ASharedMemory_create_ = reinterpret_cast<decltype(android_ASharedMemory_create_)>(
+          dlsym(libandroid_, "ASharedMemory_create"));
+      assert_not_null(android_ASharedMemory_create_);
+    }
+  }
+}
+
+void AndroidShutdown() {
+  android_ASharedMemory_create_ = nullptr;
+  if (libandroid_) {
+    dlclose(libandroid_);
+    libandroid_ = nullptr;
+  }
+}
+""",
+    "Android lazy ASharedMemory initialization",
+)
+patch(
+    "src/core/memory_posix.cpp",
+    """#if REX_PLATFORM_ANDROID
+  AndroidInitialize();
+  // TODO(Triang3l): Check if memfd can be used instead on API 30+.""",
+    """#if REX_PLATFORM_ANDROID
+  // TODO(Triang3l): Check if memfd can be used instead on API 30+.""",
+    "Initialize Android shared memory on first use",
+)
+
 # Android processes run as app_process, not the app's shared library. Resolve
 # the loaded ReXGlue runtime path so GetExecutableFolder() points at the
 # nativeLibraryDir containing the SDL host and runtime-loaded GPU plugin.
