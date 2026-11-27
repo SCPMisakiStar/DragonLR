@@ -511,5 +511,35 @@ void Fiber::Destroy() {
 #endif  // REX_PLATFORM_ANDROID
 ''', encoding="utf-8")
 
-print(f"Applied Android CMake/window/timer/fiber compatibility patches to {root}")
+# Android processes run as app_process, not the app's shared library. Resolve
+# the loaded ReXGlue runtime path so GetExecutableFolder() points at the
+# nativeLibraryDir containing the SDL host and runtime-loaded GPU plugin.
+patch(
+    "src/core/filesystem_posix.cpp",
+    "#if defined(__APPLE__)\n#include <mach-o/dyld.h>\n#endif",
+    "#if defined(__APPLE__)\n#include <mach-o/dyld.h>\n#elif defined(__ANDROID__)\n#include <dlfcn.h>\n#endif",
+    "Android native library path lookup",
+)
+patch(
+    "src/core/filesystem_posix.cpp",
+    """#elif defined(__ANDROID__)
+  Dl_info info{};
+  const auto function_address =
+      reinterpret_cast<uintptr_t>(&GetExecutablePath);
+  if (dladdr(reinterpret_cast<void*>(function_address), &info) == 0 ||
+      !info.dli_fname) {
+    return {};
+  }
+  std::error_code ec;
+  std::filesystem::path library_path =
+      std::filesystem::weakly_canonical(info.dli_fname, ec);
+  return ec ? std::filesystem::path(info.dli_fname) : library_path;
+#else
+  char buff[FILENAME_MAX] = "";""",
+    """#else
+  char buff[FILENAME_MAX] = "";""",
+    "Android runtime library path",
+)
+
+print(f"Applied Android CMake/window/timer/fiber/filesystem compatibility patches to {root}")
 
