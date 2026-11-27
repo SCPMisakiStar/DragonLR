@@ -101,6 +101,9 @@ target_include_directories(rexcore PRIVATE
 
 if(APPLE)
     target_link_libraries(rexcore PRIVATE pthread)
+elseif(ANDROID)
+    # Bionic provides pthread and clock APIs through libc; only libdl is separate.
+    target_link_libraries(rexcore PRIVATE dl)
 elseif(UNIX)
     target_link_libraries(rexcore PRIVATE pthread rt dl)
 endif()
