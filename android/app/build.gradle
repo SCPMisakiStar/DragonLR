@@ -69,6 +69,13 @@ android {
         }
     }
 
+    packaging {
+        jniLibs {
+            // Ensure dladdr() resolves native libraries to a real nativeLibraryDir.
+            useLegacyPackaging = true
+        }
+    }
+
     sourceSets {
         main {
             java.srcDirs += file("../../rexglue-sdk-0.10/thirdparty/sdl3/android-project/app/src/main/java")
