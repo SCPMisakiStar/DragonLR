@@ -1,4 +1,4 @@
-name: Android SDK ARM64 build check
+name: Android SDK and DragonLR ARM64 APK build
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
       - name: Install Android NDK
         uses: android-actions/setup-android@v3
         with:
-          packages: platform-tools ndk;27.2.12479018 cmake;3.31.6
+          packages: platform-tools platforms;android-35 build-tools;35.0.0 ndk;27.2.12479018 cmake;3.31.6
 
       - name: Export Android NDK path
         shell: bash
@@ -76,23 +76,19 @@ jobs:
       - name: Install Android SDK package
         run: cmake --install out/build/android-sdk-arm64
 
-      - name: Configure DragonLR Android ARM64 native target
-        shell: bash
-        run: |
-          cmake -S . -B out/build/dragonlr-android-arm64 -G Ninja \
-            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
-            -DANDROID_ABI=arm64-v8a \
-            -DANDROID_PLATFORM=android-29 \
-            -DANDROID_STL=c++_shared \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CXX_STANDARD=23 \
-            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/rexglue-android" \
-            -DDBZ3_PLATFORM_DIR="$GITHUB_WORKSPACE/platform/android" \
-            -DDBZ3_GENERATED_DIR=generated \
-            -DDBZ3_DUAL_REGION=OFF
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-      - name: Build DragonLR Android native library
-        run: cmake --build out/build/dragonlr-android-arm64 --target dbz3 --parallel 2
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build DragonLR Android debug APK
+        run: gradle -p android assembleDebug --no-daemon --stacktrace
 
       - name: Verify ARM64 outputs
         shell: bash
@@ -104,18 +100,19 @@ jobs:
           file "$(find rexglue-android -type f -name 'librexruntime.so' -print -quit)" | grep -q 'ARM aarch64'
           file "$(find rexglue-android -type f -name 'librexgpu-xenos.so' -print -quit)" | grep -q 'ARM aarch64'
           file "$(find rexglue-android -type f -name 'libSDL3.so' -print -quit)" | grep -q 'ARM aarch64'
-          test -n "$(find out/build/dragonlr-android-arm64 out -type f -name 'libmain.so' -print -quit)"
-          test -n "$(find out/build/dragonlr-android-arm64 out -type f -name 'librexgpu-xenos.so' -print -quit)"
-          file "$(find out/build/dragonlr-android-arm64 out -type f -name 'libmain.so' -print -quit)" | grep -q 'ARM aarch64'
-          file "$(find out/build/dragonlr-android-arm64 out -type f -name 'librexgpu-xenos.so' -print -quit)" | grep -q 'ARM aarch64'
+          APK="$(find android/app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          for LIB in libmain.so librexgpu-xenos.so librexruntime.so libSDL3.so libc++_shared.so; do
+            unzip -p "$APK" "lib/arm64-v8a/$LIB" > "/tmp/$LIB"
+            test -s "/tmp/$LIB"
+            file "/tmp/$LIB" | grep -q 'ARM aarch64'
+          done
 
-      - name: Upload DragonLR Android native artifacts
+      - name: Upload DragonLR Android debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: dragonlr-android-arm64-native
-          path: |
-            out/**/libmain.so
-            out/**/librexgpu-xenos.so
+          name: dragonlr-android-arm64-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
       - name: Upload Android SDK artifacts
