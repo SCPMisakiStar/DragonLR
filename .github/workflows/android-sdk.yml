@@ -75,8 +75,10 @@ jobs:
           find rexglue-android -type f -name '*.so' -print
           test -n "$(find rexglue-android -type f -name 'librexruntime.so' -print -quit)"
           test -n "$(find rexglue-android -type f -name 'librexgpu-xenos.so' -print -quit)"
+          test -n "$(find rexglue-android -type f -name 'libSDL3.so' -print -quit)"
           file "$(find rexglue-android -type f -name 'librexruntime.so' -print -quit)" | grep -q 'ARM aarch64'
           file "$(find rexglue-android -type f -name 'librexgpu-xenos.so' -print -quit)" | grep -q 'ARM aarch64'
+          file "$(find rexglue-android -type f -name 'libSDL3.so' -print -quit)" | grep -q 'ARM aarch64'
 
       - name: Upload Android SDK artifacts
         uses: actions/upload-artifact@v4
