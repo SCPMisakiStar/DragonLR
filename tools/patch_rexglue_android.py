@@ -279,7 +279,7 @@ if "REXGLUE_DRAGONLR_ANDROID_FIBER_CONTEXT" not in fiber_h:
 #include <cstdint>
 #include <vector>
 #endif"""
-    new_includes = """#if REX_PLATFORM_LINUX || REX_PLATFORM_MAC
+    new_includes = """#if (REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID) || REX_PLATFORM_MAC
 #if REX_PLATFORM_MAC && !defined(_XOPEN_SOURCE)
 // Darwin hides the deprecated ucontext APIs unless _XOPEN_SOURCE is defined
 // before including <ucontext.h>.
@@ -314,7 +314,7 @@ struct alignas(16) AndroidFiberContext {
 
   static void Trampoline();
 #endif"""
-    new_fields = """#elif REX_PLATFORM_LINUX || REX_PLATFORM_MAC
+    new_fields = """#elif (REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID) || REX_PLATFORM_MAC
   ucontext_t context_{};
   std::vector<uint8_t> stack_;
   void (*entry_)(void*) = nullptr;
