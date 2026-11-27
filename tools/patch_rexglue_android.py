@@ -382,7 +382,7 @@ if not fiber_android_source.exists():
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
+#include <pthread.h>
 
 namespace rex::thread {
 
@@ -452,8 +452,8 @@ void Fiber::Trampoline() {
   Fiber* fiber = tls_current_;
   assert(fiber && fiber->entry_);
   fiber->entry_(fiber->arg_);
-  // ReXGlue fiber entry points must not return to an absent continuation.
-  std::terminate();
+  // Match the POSIX backend: a fiber without a successor terminates its host thread.
+  pthread_exit(nullptr);
 }
 
 void Fiber::SwitchTo(Fiber* target) {
