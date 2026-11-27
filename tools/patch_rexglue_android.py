@@ -343,7 +343,7 @@ if "REXGLUE_DRAGONLR_ANDROID_FIBER_SOURCE" not in core_cmake:
         raise SystemExit("Android patch: core CMake fiber_posix source marker changed")
     core_cmake = core_cmake.replace(
         "        fiber_posix.cpp\n",
-        "        $<$<NOT:$<BOOL:\${ANDROID}>>:fiber_posix.cpp> # REXGLUE_DRAGONLR_ANDROID_FIBER_SOURCE\n",
+        "        $<$<NOT:$<BOOL:${ANDROID}>>:fiber_posix.cpp> # REXGLUE_DRAGONLR_ANDROID_FIBER_SOURCE\n",
         1,
     )
     platform_end = """        threading_posix.cpp
