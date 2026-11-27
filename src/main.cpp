@@ -80,7 +80,7 @@ namespace dbz3::survivors { void CrearPrueba(rex::ui::ImGuiDrawer* drawer); bool
 // `platform.cmake` de DBZ3_PLATFORM_DIR (CMakeLists.txt) define DBZ3_PLATFORM_HEADER, una cabecera que
 // puede definir:
 //   DBZ3_PLATFORM_EARLY_INIT()        antes de leer dbz3_user.toml (rutas privadas Android)
- //   DBZ3_PLATFORM_PRE_SETUP(config)  tras leer dbz3_user.toml (p. ej. elegir otro renderizador)
+//   DBZ3_PLATFORM_PRE_SETUP(config)  tras leer dbz3_user.toml (p. ej. elegir otro renderizador)
 //   DBZ3_PLATFORM_APP_MEMBERS        metodos que se anaden a Dbz3App (overrides de rex::ReXApp)
 //   DBZ3_PLATFORM_SHUTDOWN()         al cerrar, antes de nuestra limpieza
 #ifdef DBZ3_PLATFORM_HEADER

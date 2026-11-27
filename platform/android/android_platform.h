@@ -8,9 +8,8 @@
 // SDL3 owns the Android activity, input/event loop and native window;
 // Vulkan presentation is provided by ReXGlue's AndroidNativeWindowSurface.
 // SDL_GetPrefPath maps to Android's private internal-storage directory.
-#define DBZ3_PLATFORM_PRE_SETUP(config)                                      \
+#define DBZ3_PLATFORM_EARLY_INIT()                                           \
     do {                                                                     \
-        (void)(config);                                                      \
         char* dragonlr_data_path = SDL_GetPrefPath("DragonLR", "DragonLR");  \
         if (dragonlr_data_path) {                                            \
             setenv("XDG_DATA_HOME", dragonlr_data_path, 1);                  \
@@ -20,6 +19,8 @@
             SDL_free(dragonlr_data_path);                                    \
         }                                                                    \
     } while (0)
+
+#define DBZ3_PLATFORM_PRE_SETUP(config) ((void)(config))
 
 #define DBZ3_PLATFORM_APP_MEMBERS
 #define DBZ3_PLATFORM_SHUTDOWN() ((void)0)
