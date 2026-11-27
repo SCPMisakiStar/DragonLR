@@ -612,5 +612,26 @@ patch(
     "Android runtime library path",
 )
 
+# The SDK's rexglue CLI is a host-side code-generation tool. It is not used
+# by the Android runtime and must not be installed as an ARM executable.
+patch(
+    "cmake/rexglue_install.cmake",
+    """if(NOT ANDROID)
+# A Debug codegen tool runs an order of magnitude slower, so only Release ships.
+install(TARGETS rexglue
+    EXPORT rexglueTargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    CONFIGURATIONS Release
+)
+endif()""",
+    """# A Debug codegen tool runs an order of magnitude slower, so only Release ships.
+install(TARGETS rexglue
+    EXPORT rexglueTargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    CONFIGURATIONS Release
+)""",
+    "Skip host-only ReXGlue CLI in Android package",
+)
+
 print(f"Applied Android CMake/window/timer/fiber/filesystem compatibility patches to {root}")
 
