@@ -230,4 +230,16 @@ if "REXGLUE_DRAGONLR_ANDROID_SURFACE" not in window:
     )
     window_path.write_text(window, encoding="utf-8")
 
+# timer_queue.cpp uses C++20 std::jthread/stop_token but relies on transitive
+# includes from rex/thread.h. Android's libc++/headers do not expose these
+# declarations through that header; include the standard headers explicitly.
+timer_path = root / "src/core/timer_queue.cpp"
+timer = timer_path.read_text(encoding="utf-8")
+if "REXGLUE_DRAGONLR_TIMER_THREAD_HEADERS" not in timer:
+    marker = "#include <forward_list>\n"
+    if marker not in timer:
+        raise SystemExit("Android patch: timer_queue.cpp include marker changed")
+    timer = timer.replace(marker, marker + "#include <thread>\n#include <stop_token>\n\n// REXGLUE_DRAGONLR_TIMER_THREAD_HEADERS\n", 1)
+    timer_path.write_text(timer, encoding="utf-8")
+
 print(f"Applied Android CMake/window compatibility patches to {root}")
