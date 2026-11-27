@@ -88,6 +88,31 @@ patch(
     "SDL Linux desktop drivers",
 )
 
+# NDK libc++ in the selected toolchain has no floating-point std::from_chars
+# overload. ReXGlue already carries a C-locale fallback for macOS; enable that
+# same fallback on non-Windows targets, including Android.
+numeric_path = root / "include/rex/string/numeric.h"
+numeric = numeric_path.read_text(encoding="utf-8")
+if "REXGLUE_ANDROID_FLOAT_FROM_CHARS" not in numeric:
+    if "#if REX_PLATFORM_MAC" not in numeric:
+        raise SystemExit("Android patch: numeric.h float parser guard changed")
+    numeric = numeric.replace("#if REX_PLATFORM_MAC", "#if !REX_PLATFORM_WIN32")
+    old_float_guard = (
+        "#if !REX_PLATFORM_WIN32\n"
+        "template <typename T>\n"
+        "inline std::from_chars_result portable_float_from_chars"
+    )
+    new_float_guard = (
+        "#if !REX_PLATFORM_WIN32\n"
+        "#define REXGLUE_ANDROID_FLOAT_FROM_CHARS 1\n"
+        "template <typename T>\n"
+        "inline std::from_chars_result portable_float_from_chars"
+    )
+    if old_float_guard not in numeric:
+        raise SystemExit("Android patch: numeric.h portable float parser block changed")
+    numeric = numeric.replace(old_float_guard, new_float_guard, 1)
+    numeric_path.write_text(numeric, encoding="utf-8")
+
 # WindowSDL must create the Android surface from SDL's ANativeWindow property.
 window_path = root / "src/ui/window_sdl.cpp"
 window = window_path.read_text(encoding="utf-8")
