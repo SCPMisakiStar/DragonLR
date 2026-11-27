@@ -263,10 +263,9 @@ elseif(DBZ3_GENERATED_DIR STREQUAL "generated_eu")
     target_compile_definitions(dbz3 PRIVATE DBZ3_EU_VARIANT=1)
 endif()
 
-target_link_libraries(dbz3 PRIVATE
-    rex::runtime
-    rex::gpu-xenos
-)
+# The Xenos backend is a dlopen-loaded plugin: stage it beside the app, but do not
+# add a DT_NEEDED dependency that forces Android to load it during process startup.
+target_link_libraries(dbz3 PRIVATE rex::runtime)
 # SUR-07 (src/xma_propio.cpp, xmaframes) usa el mismo FFmpeg estatico que los videos SFD (src/video_sfd.cmake). Con
 # rex::libavcodec enlazado ademas, su avcodec_find_decoder (lista solo de audio) tapaba el MPEG-2: los SFD de IW no abrian.
 target_include_directories(dbz3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rexglue-sdk-0.10/thirdparty/FFmpeg)
