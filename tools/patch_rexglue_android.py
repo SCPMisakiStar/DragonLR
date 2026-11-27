@@ -29,6 +29,7 @@ patch(
     "        message(FATAL_ERROR \"DragonLR Android currently supports arm64-v8a only (got: ${ANDROID_ABI})\")\n"
     "    endif()\n"
     "    set(REX_PLATFORM \"android-arm64\")\n"
+    "    set(REX_PLATFORM_ANDROID ON)\n"
     "    add_compile_definitions(REX_PLATFORM_ANDROID=1)\n"
     "elseif(UNIX AND NOT APPLE)",
     "elseif(UNIX AND NOT APPLE)",
