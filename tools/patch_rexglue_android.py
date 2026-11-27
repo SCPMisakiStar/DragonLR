@@ -230,16 +230,37 @@ if "REXGLUE_DRAGONLR_ANDROID_SURFACE" not in window:
     )
     window_path.write_text(window, encoding="utf-8")
 
-# timer_queue.cpp uses C++20 std::jthread/stop_token but relies on transitive
-# includes from rex/thread.h. Android's libc++/headers do not expose these
-# declarations through that header; include the standard headers explicitly.
+# Android NDK r27 libc++ does not expose std::jthread/std::stop_token.
+# Preserve the timer queue behavior with std::thread and an atomic stop flag.
+# The existing disarmed sentinel wakes wait_until_published; join guarantees
+# the dispatch thread has exited before TimerQueue storage is destroyed.
 timer_path = root / "src/core/timer_queue.cpp"
 timer = timer_path.read_text(encoding="utf-8")
-if "REXGLUE_DRAGONLR_TIMER_THREAD_HEADERS" not in timer:
-    marker = "#include <forward_list>\n"
-    if marker not in timer:
-        raise SystemExit("Android patch: timer_queue.cpp include marker changed")
-    timer = timer.replace(marker, marker + "#include <thread>\n#include <stop_token>\n\n// REXGLUE_DRAGONLR_TIMER_THREAD_HEADERS\n", 1)
-    timer_path.write_text(timer, encoding="utf-8")
+if "REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT" not in timer:
+    replacements = [
+        ("#include <algorithm>\n#include <forward_list>",
+         "#include <algorithm>\n#include <atomic>\n#include <forward_list>\n#include <thread>"),
+        ("    dispatch_thread_ =\n        std::jthread([this](std::stop_token stop_token) { TimerThreadMain(stop_token); });",
+         "    dispatch_thread_ = std::thread([this] { TimerThreadMain(); });"),
+        ("    dispatch_thread_.request_stop();",
+         "    stop_requested_.store(true, std::memory_order_release);"),
+        ("    // std::jthread auto-joins on destruction",
+         "    if (dispatch_thread_.joinable()) {\n      dispatch_thread_.join();\n    }"),
+        ("  void TimerThreadMain(std::stop_token stop_token) {",
+         "  void TimerThreadMain() {"),
+        ("    while (!stop_token.stop_requested()) {",
+         "    while (!stop_requested_.load(std::memory_order_acquire)) {"),
+        ("  std::jthread::id dispatch_thread_id() const { return dispatch_thread_.get_id(); }",
+         "  std::thread::id dispatch_thread_id() const { return dispatch_thread_.get_id(); }"),
+        ("  std::jthread dispatch_thread_;",
+         "  std::atomic<bool> stop_requested_{false};\n  std::thread dispatch_thread_;"),
+    ]
+    for old, new in replacements:
+        if old not in timer:
+            raise SystemExit("Android patch: timer_queue.cpp expected code not found: " + old.splitlines()[0])
+        timer = timer.replace(old, new, 1)
+    timer = timer.replace("namespace rex::thread {",
+                          "// REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT\nnamespace rex::thread {", 1)
+    timer_path.write_text(timer, encoding="utf--8")
 
 print(f"Applied Android CMake/window compatibility patches to {root}")
