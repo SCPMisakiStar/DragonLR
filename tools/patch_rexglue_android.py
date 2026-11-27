@@ -55,13 +55,13 @@ patch(
 # Enable VK_KHR_android_surface declarations in the UI/Vulkan translation units.
 patch(
     "src/ui/CMakeLists.txt",
-    "add_library(rexui OBJECT ${REXUI_SOURCES})\\n"
-    "add_library(rex::ui ALIAS rexui)\\n\\n"
-    "if(REX_PLATFORM_ANDROID)\\n"
-    "    target_compile_definitions(rexui PRIVATE VK_USE_PLATFORM_ANDROID_KHR=1)\\n"
-    "    target_link_libraries(rexui PUBLIC android)\\n"
+    "add_library(rexui OBJECT \${REXUI_SOURCES})\n"
+    "add_library(rex::ui ALIAS rexui)\n\n"
+    "if(REX_PLATFORM_ANDROID)\n"
+    "    target_compile_definitions(rexui PRIVATE VK_USE_PLATFORM_ANDROID_KHR=1)\n"
+    "    target_link_libraries(rexui PUBLIC android)\n"
     "endif()",
-    "add_library(rexui OBJECT ${REXUI_SOURCES})\\n"
+    "add_library(rexui OBJECT \${REXUI_SOURCES})\n"
     "add_library(rex::ui ALIAS rexui)",
     "Android Vulkan and native-window dependencies",
 )
