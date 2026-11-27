@@ -23,8 +23,10 @@ jobs:
       - name: Install Android NDK
         uses: android-actions/setup-android@v3
         with:
-          ndk-version: 27.2.12479018
-          cmake-version: 3.31.6
+          packages: |
+            platform-tools
+            ndk;27.2.12479018
+            cmake;3.31.6
 
       - name: Export Android NDK path
         shell: bash
