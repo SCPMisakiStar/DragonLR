@@ -297,7 +297,7 @@ if "REXGLUE_DRAGONLR_ANDROID_FIBER_CONTEXT" not in fiber_h:
 // REXGLUE_DRAGONLR_ANDROID_FIBER_CONTEXT
 // Layout is shared with rex_android_fiber_swap() in fiber_android.cpp.
 struct alignas(16) AndroidFiberContext {
-  uint64_t x19_x30[12];
+  std::uint64_t x19_x30[12];
   uint64_t sp;
   uint64_t d8_d15[8];
 };
