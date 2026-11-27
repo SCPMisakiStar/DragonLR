@@ -261,6 +261,6 @@ if "REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT" not in timer:
         timer = timer.replace(old, new, 1)
     timer = timer.replace("namespace rex::thread {",
                           "// REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT\nnamespace rex::thread {", 1)
-    timer_path.write_text(timer, encoding="utf--8")
+    timer_path.write_text(timer, encoding="utf-8")
 
 print(f"Applied Android CMake/window compatibility patches to {root}")
