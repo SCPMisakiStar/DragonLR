@@ -516,8 +516,8 @@ void Fiber::Destroy() {
 # nativeLibraryDir containing the SDL host and runtime-loaded GPU plugin.
 patch(
     "src/core/filesystem_posix.cpp",
-    "#if defined(__APPLE__)\n#include <mach-o/dyld.h>\n#endif",
     "#if defined(__APPLE__)\n#include <mach-o/dyld.h>\n#elif defined(__ANDROID__)\n#include <dlfcn.h>\n#endif",
+    "#if defined(__APPLE__)\n#include <mach-o/dyld.h>\n#endif",
     "Android native library path lookup",
 )
 patch(

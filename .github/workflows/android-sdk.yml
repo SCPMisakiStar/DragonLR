@@ -71,7 +71,7 @@ jobs:
 
       - name: Build ReXGlue runtime and Xenos Vulkan plugin
         run: |
-          cmake --build out/build/android-sdk-arm64 --target rexruntime rexgpu-xenos --parallel 2
+          cmake --build out/build/android-sdk-arm64 --target rexruntime rexgpu-xenos disasm --parallel 2
 
       - name: Install Android SDK package
         run: cmake --install out/build/android-sdk-arm64
