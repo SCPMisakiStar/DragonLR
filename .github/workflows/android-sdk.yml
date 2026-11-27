@@ -40,6 +40,7 @@ jobs:
       - name: Apply DragonLR SDK overlays
         shell: bash
         run: |
+          python3 -m py_compile tools/patch_rexglue_android.py
           cp -a patches/rexglue-sdk/. rexglue-sdk-0.10/
           python3 tools/patch_rexglue_android.py rexglue-sdk-0.10
           grep -n 'android-arm64' rexglue-sdk-0.10/CMakeLists.txt
