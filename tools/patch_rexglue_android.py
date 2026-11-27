@@ -49,10 +49,10 @@ patch(
 patch(
     "cmake/rexglue_helpers.cmake",
     "if(UNIX AND NOT APPLE AND NOT ANDROID)\n"
-    "        set_target_properties(${target_name} PROPERTIES\n"
+    "        set_target_properties(\${target_name} PROPERTIES\n"
     "            INSTALL_RPATH \"$ORIGIN\"",
     "if(UNIX AND NOT APPLE)\n"
-    "        set_target_properties(${target_name} PROPERTIES\n"
+    "        set_target_properties(\${target_name} PROPERTIES\n"
     "            INSTALL_RPATH \"$ORIGIN\"",
     "Linux-only host app RPATH",
 )
