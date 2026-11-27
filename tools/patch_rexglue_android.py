@@ -57,6 +57,7 @@ patch(
     "src/ui/CMakeLists.txt",
     "if(REX_PLATFORM_ANDROID)\n"
     "    target_compile_definitions(rexui PRIVATE VK_USE_PLATFORM_ANDROID_KHR=1)\n"
+    "    target_link_libraries(rexui PUBLIC android)\n"
     "endif()\n\n"
     "if(REXGLUE_USE_VULKAN)",
     "if(REXGLUE_USE_VULKAN)",
