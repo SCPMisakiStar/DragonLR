@@ -10,6 +10,7 @@ add_library(rexcore OBJECT
     cvar.cpp
     exception_handler.cpp
     filesystem.cpp
+    filesystem_android.cpp
     filesystem_wildcard.cpp
     hash.cpp
     logging.cpp
