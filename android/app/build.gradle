@@ -4,6 +4,25 @@ plugins {
 
 def repoRoot = rootProject.projectDir.parentFile
 
+// The Xenos GPU backend is loaded with dlopen at runtime, not linked to
+// libmain.so. Stage it explicitly so AGP packages it in lib/arm64-v8a.
+def rexglueGpuPlugin = new File(repoRoot, "rexglue-android/lib/librexgpu-xenos.so")
+def jniLibsArm64 = file("src/main/jniLibs/arm64-v8a")
+
+tasks.register("stageReXGlueGpuPlugin", Copy) {
+    from(rexglueGpuPlugin)
+    into(jniLibsArm64)
+    doFirst {
+        if (!rexglueGpuPlugin.isFile()) {
+            throw new GradleException("Missing ReXGlue Android GPU plugin: ${rexglueGpuPlugin}")
+        }
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("stageReXGlueGpuPlugin")
+}
+
 android {
     namespace "com.dragonlr"
     compileSdk 35
