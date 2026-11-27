@@ -263,6 +263,23 @@ if "REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT" not in timer:
                           "// REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT\nnamespace rex::thread {", 1)
     timer_path.write_text(timer, encoding="utf-8")
 
+# Expose the runtime Android API level used by Android memory/thread backends.
+platform_header = root / "include/rex/platform.h"
+platform_h = platform_header.read_text(encoding="utf-8")
+if "REXGLUE_DRAGONLR_ANDROID_API_LEVEL" not in platform_h:
+    platform_h += """
+
+#if REX_PLATFORM_ANDROID
+#include <android/api-level.h>
+namespace rex {
+// Runtime device API level; ASharedMemory is available from API 26.
+inline int GetAndroidApiLevel() { return android_get_device_api_level(); }
+}  // namespace rex
+#define REXGLUE_DRAGONLR_ANDROID_API_LEVEL 1
+#endif
+"""
+    platform_header.write_text(platform_h, encoding="utf-8")
+
 # Bionic does not implement getcontext/makecontext/swapcontext. ReXGlue fibers
 # are used by the guest kernel scheduler, so preserve them with a cooperative
 # AArch64 context switch that saves the AAPCS64 callee-saved register set.
