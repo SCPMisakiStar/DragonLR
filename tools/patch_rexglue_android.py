@@ -678,5 +678,27 @@ install(TARGETS rexglue
     "Skip host-only ReXGlue CLI in Android package",
 )
 
+# The pinned fmt subproject installs libfmt.a and headers but its package
+# config is absent in this Android SDK build. Provide the minimal imported
+# target required by ReXGlue and spdlog consumers.
+patch(
+    "cmake/rexglue_install.cmake",
+    "set(REXGLUE_FMT_CONFIG \"\${CMAKE_CURRENT_BINARY_DIR}/fmtConfig.cmake\")\n"
+    "file(WRITE \"\${REXGLUE_FMT_CONFIG}\" [=[\n"
+    "if(NOT TARGET fmt::fmt)\n"
+    "    add_library(fmt::fmt STATIC IMPORTED)\n"
+    "    set_target_properties(fmt::fmt PROPERTIES\n"
+    "        IMPORTED_LOCATION \"\${CMAKE_CURRENT_LIST_DIR}/../../libfmt.a\"\n"
+    "        INTERFACE_INCLUDE_DIRECTORIES \"\${CMAKE_CURRENT_LIST_DIR}/../../../include\"\n"
+    "    )\n"
+    "endif()\n"
+    "]=])\n"
+    "install(FILES \"\${REXGLUE_FMT_CONFIG}\"\n"
+    "    DESTINATION \"\${CMAKE_INSTALL_LIBDIR}/cmake/fmt\")\n\n"
+    "# Generate and install package config files",
+    "# Generate and install package config files",
+    "Install a CMake config for the Android fmt archive",
+)
+
 print(f"Applied Android CMake/window/timer/fiber/filesystem compatibility patches to {root}")
 
