@@ -235,17 +235,17 @@ if "REXGLUE_DRAGONLR_ANDROID_SURFACE" not in window:
 timer_path = root / "src/core/timer_queue.cpp"
 timer = timer_path.read_text(encoding="utf-8")
 if "REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT" not in timer:
-    marker = "#include <forward_list>\\n"
+    marker = "#include <forward_list>\n"
     if marker not in timer:
         raise SystemExit("Android patch: timer_queue.cpp forward_list include marker changed")
-    timer = timer.replace(marker, marker + "#include <atomic>\\n#include <thread>\\n", 1)
+    timer = timer.replace(marker, marker + "#include <atomic>\n#include <thread>\n", 1)
     replacements = [
         ("std::jthread([this](std::stop_token stop_token) { TimerThreadMain(stop_token); })",
          "std::thread([this] { TimerThreadMain(); })"),
         ("dispatch_thread_.request_stop();",
          "stop_requested_.store(true, std::memory_order_release);"),
         ("// std::jthread auto-joins on destruction",
-         "if (dispatch_thread_.joinable()) {\\n      dispatch_thread_.join();\\n    }"),
+         "if (dispatch_thread_.joinable()) {\n      dispatch_thread_.join();\n    }"),
         ("void TimerThreadMain(std::stop_token stop_token)",
          "void TimerThreadMain()"),
         ("while (!stop_token.stop_requested())",
@@ -253,14 +253,14 @@ if "REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT" not in timer:
         ("std::jthread::id dispatch_thread_id()",
          "std::thread::id dispatch_thread_id()"),
         ("std::jthread dispatch_thread_;",
-         "std::atomic<bool> stop_requested_{false};\\n  std::thread dispatch_thread_;"),
+         "std::atomic<bool> stop_requested_{false};\n  std::thread dispatch_thread_;"),
     ]
     for old, new in replacements:
         if old not in timer:
             raise SystemExit("Android patch: timer_queue.cpp expected code not found: " + old)
         timer = timer.replace(old, new, 1)
     timer = timer.replace("namespace rex::thread {",
-                          "// REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT\\nnamespace rex::thread {", 1)
+                          "// REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT\nnamespace rex::thread {", 1)
     timer_path.write_text(timer, encoding="utf-8")
 
 print(f"Applied Android CMake/window compatibility patches to {root}")
