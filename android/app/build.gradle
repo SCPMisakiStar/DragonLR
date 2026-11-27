@@ -45,6 +45,7 @@ android {
                     "-DANDROID_STL=c++_shared",
                     "-DDBZ3_PLATFORM_DIR=${new File(repoRoot, 'platform/android').absolutePath}",
                     "-DCMAKE_PREFIX_PATH=${new File(repoRoot, 'rexglue-android').absolutePath}",
+                    "-Drexglue_DIR=${new File(repoRoot, 'rexglue-android/lib/cmake/rexglue').absolutePath}",
                     "-DDBZ3_GENERATED_DIR=generated",
                     "-DDBZ3_DUAL_REGION=OFF"
                 )
