@@ -71,11 +71,11 @@ patch(
 patch(
     "thirdparty/CMakeLists.txt",
     "if(ANDROID)\n"
-    "    set(SDL_SHARED ON CACHE BOOL \\"\\" FORCE)\n"
-    "    set(SDL_STATIC OFF CACHE BOOL \\"\\" FORCE)\n"
+    "    set(SDL_SHARED ON CACHE BOOL \"\" FORCE)\n"
+    "    set(SDL_STATIC OFF CACHE BOOL \"\" FORCE)\n"
     "endif()\n\n"
-    "set(SDL_TEST OFF CACHE BOOL \\"\\" FORCE)",
-    "set(SDL_TEST OFF CACHE BOOL \\"\\" FORCE)",
+    "set(SDL_TEST OFF CACHE BOOL \"\" FORCE)",
+    "set(SDL_TEST OFF CACHE BOOL \"\" FORCE)",
     "SDL3 Android shared library",
 )
 
