@@ -171,16 +171,6 @@ if "REXGLUE_DRAGONLR_ANDROID_SURFACE" not in window:
         raise SystemExit("Android patch: CreateSurfaceImpl block changed")
     window = window.replace(old_surface, new_surface, 1)
     window = window.replace(
-        "#include <rex/ui/surface_android.h>",
-        "#include <SDL3/SDL_system.h>\n#include <rex/ui/surface_android.h>",
-        1,
-    )
-    window = window.replace(
-        "#if REX_PLATFORM_ANDROID\n#include <SDL3/SDL_system.h>",
-        "#if REX_PLATFORM_ANDROID\n#include <SDL3/SDL_system.h>",
-        1,
-    )
-    window = window.replace(
         "namespace rex::ui {",
         "// REXGLUE_DRAGONLR_ANDROID_SURFACE\nnamespace rex::ui {",
         1,
