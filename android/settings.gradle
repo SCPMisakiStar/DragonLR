@@ -1,6 +1,9 @@
 pluginManagement {
     repositories {
         google()
+        // Google-hosted Maven Central mirror avoids transient 429 responses
+        // from repo.maven.apache.org in shared CI runners.
+        maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2") }
         mavenCentral()
         gradlePluginPortal()
     }
@@ -10,6 +13,9 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
+        // Keep the mirror first so large Android Gradle Plugin dependency
+        // graphs do not overload Maven Central during clean CI builds.
+        maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2") }
         mavenCentral()
     }
 }
