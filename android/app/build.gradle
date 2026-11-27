@@ -1,0 +1,59 @@
+plugins {
+    id "com.android.application"
+}
+
+def repoRoot = rootProject.projectDir.parentFile
+
+android {
+    namespace "com.dragonlr"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.dragonlr"
+        minSdk 29
+        targetSdk 35
+        versionCode 1
+        versionName "0.1.0"
+
+        ndk {
+            abiFilters "arm64-v8a"
+        }
+
+        externalNativeBuild {
+            cmake {
+                arguments(
+                    "-DANDROID_STL=c++_shared",
+                    "-DDBZ3_PLATFORM_DIR=${new File(repoRoot, 'platform/android').absolutePath}",
+                    "-DCMAKE_PREFIX_PATH=${new File(repoRoot, 'rexglue-android').absolutePath}",
+                    "-DDBZ3_GENERATED_DIR=generated",
+                    "-DDBZ3_DUAL_REGION=OFF"
+                )
+                cppFlags "-std=c++23"
+                targets "dbz3"
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file("../../CMakeLists.txt")
+            version "3.31.6"
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += file("../../rexglue-sdk-0.10/thirdparty/sdl3/android-project/app/src/main/java")
+            jniLibs.srcDirs += file("src/main/jniLibs")
+        }
+    }
+}
