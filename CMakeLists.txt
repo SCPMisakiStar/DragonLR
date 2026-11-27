@@ -212,6 +212,8 @@ else()
     add_executable(dbz3 ${DBZ3_SOURCES})
 endif()
 
+# Android package: do not even define desktop/developer test executables.
+if(NOT ANDROID)
 # CaC: prueba de persistencia real, sin motor; se compila con tools/compilar.py.
 add_executable(cac_guardado_test tests/cac_guardado_test.cpp src/cac/cac.cpp)
 target_include_directories(cac_guardado_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/rexglue/include $<TARGET_PROPERTY:rex::runtime,INTERFACE_INCLUDE_DIRECTORIES>)
@@ -242,6 +244,7 @@ add_executable(xma_propio_test EXCLUDE_FROM_ALL tests/xma_propio_test.cpp src/xm
 target_compile_definitions(xma_propio_test PRIVATE XMA_PROPIO_TEST=1)
 target_include_directories(xma_propio_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/rexglue-sdk-0.10/thirdparty/FFmpeg)
 target_link_libraries(xma_propio_test PRIVATE rex::libavcodec)
+endif() # NOT ANDROID: host-only test tools
 
 target_include_directories(dbz3 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -289,8 +292,8 @@ if(DBZ3_LIBJUICE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libjuice/CM
     target_compile_definitions(dbz3 PRIVATE DBZ3_LIBJUICE=1)
 endif()
 
-if(UNIX AND NOT APPLE)
-    # Whole-archive linking for kernel hooks
+if(UNIX AND NOT APPLE AND NOT ANDROID)
+    # Whole-archive linking for Linux desktop kernel hooks
     target_link_options(dbz3 PRIVATE
         -Wl,--whole-archive
         $<TARGET_FILE:rex::kernel>
