@@ -263,6 +263,20 @@ if "REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT" not in timer:
                           "// REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT\nnamespace rex::thread {", 1)
     timer_path.write_text(timer, encoding="utf-8")
 
+# ReXGlue v0.10.0 references an integration header absent from the published SDK.
+threading_path = root / "src/core/threading_posix.cpp"
+threading = threading_path.read_text(encoding="utf-8")
+missing_integration_include = "#include <rex/main_android.h>\n"
+if "REXGLUE_DRAGONLR_ANDROID_NO_MAIN_HEADER" not in threading:
+    if missing_integration_include not in threading:
+        raise SystemExit("Android patch: threading_posix.cpp main_android include marker changed")
+    threading = threading.replace(
+        missing_integration_include,
+        "// REXGLUE_DRAGONLR_ANDROID_NO_MAIN_HEADER: SDK has no rex/main_android.h\n",
+        1,
+    )
+    threading_path.write_text(threading, encoding="utf-8")
+
 # Expose the runtime Android API level used by Android memory/thread backends.
 platform_header = root / "include/rex/platform.h"
 platform_h = platform_header.read_text(encoding="utf-8")
