@@ -57,6 +57,30 @@ patch(
     "Linux-only host app RPATH",
 )
 
+# The disassembler is a host-side developer tool, not part of the Android
+# runtime SDK. Do not list or install its archive for Android.
+patch(
+    "cmake/rexglue_install.cmake",
+    "set(REXGLUE_INSTALL_TARGETS\n"
+    "    rexruntime\n"
+    "    rexgpu-xenos\n"
+    "    disruptorplus renderdoc simde tomlplusplus\n"
+    "    aes128 mspack o1heap xxhash\n"
+    "    libavcodec libavutil\n"
+    ")\n"
+    "if(NOT ANDROID)\n"
+    "    list(APPEND REXGLUE_INSTALL_TARGETS disasm)\n"
+    "endif()",
+    "set(REXGLUE_INSTALL_TARGETS\n"
+    "    rexruntime\n"
+    "    rexgpu-xenos\n"
+    "    disruptorplus renderdoc simde tomlplusplus\n"
+    "    aes128 mspack o1heap disasm xxhash\n"
+    "    libavcodec libavutil\n"
+    ")",
+    "Exclude host-only disassembler from Android SDK package",
+)
+
 # Android has no X11 or Wayland libraries. The SDL Android video backend
 # supplies an ANativeWindow, which the Vulkan presenter already understands.
 patch(
