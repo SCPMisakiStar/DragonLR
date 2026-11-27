@@ -46,6 +46,12 @@ android {
                     "-DDBZ3_PLATFORM_DIR=${new File(repoRoot, 'platform/android').absolutePath}",
                     "-DCMAKE_PREFIX_PATH=${new File(repoRoot, 'rexglue-android').absolutePath}",
                     "-Drexglue_DIR=${new File(repoRoot, 'rexglue-android/lib/cmake/rexglue').absolutePath}",
+                    "-Dfmt_DIR=${new File(repoRoot, 'rexglue-android/lib/cmake/fmt').absolutePath}",
+                    "-Dspdlog_DIR=${new File(repoRoot, 'rexglue-android/lib/cmake/spdlog').absolutePath}",
+                    "-Dutf8cpp_DIR=${new File(repoRoot, 'rexglue-android/share/utf8cpp/cmake').absolutePath}",
+                    "-DSDL3_DIR=${new File(repoRoot, 'rexglue-android/lib/cmake/SDL3').absolutePath}",
+                    "-DVulkanHeaders_DIR=${new File(repoRoot, 'rexglue-android/share/cmake/VulkanHeaders').absolutePath}",
+                    "-DVulkanMemoryAllocator_DIR=${new File(repoRoot, 'rexglue-android/share/cmake/VulkanMemoryAllocator').absolutePath}",
                     "-DDBZ3_GENERATED_DIR=generated",
                     "-DDBZ3_DUAL_REGION=OFF"
                 )
