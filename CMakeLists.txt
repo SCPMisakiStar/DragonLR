@@ -204,6 +204,10 @@ if(WIN32)
     # choice here (the game also builds on Linux where they are not). Silence
     # the -Wdeprecated-declarations noise project-wide on MSVC/clang-cl.
     target_compile_definitions(dbz3 PRIVATE _CRT_SECURE_NO_WARNINGS)
+elseif(ANDROID)
+    # SDL3's Android activity loads a shared library named libmain.so.
+    add_library(dbz3 SHARED ${DBZ3_SOURCES})
+    set_target_properties(dbz3 PROPERTIES OUTPUT_NAME main)
 else()
     add_executable(dbz3 ${DBZ3_SOURCES})
 endif()
@@ -302,6 +306,9 @@ rexglue_configure_target(dbz3 GPU_PLUGINS xenos)
 # Plataformas fuera de PC (Android, Switch): su carpeta trae un platform.cmake que anade a `dbz3` sus
 # fuentes, definiciones y DBZ3_PLATFORM_HEADER (enganches de src/main.cpp). Vacio = PC, sin cambios.
 set(DBZ3_PLATFORM_DIR "" CACHE PATH "Carpeta de plataforma con platform.cmake (vacio = PC)")
+if(ANDROID AND NOT DBZ3_PLATFORM_DIR)
+    set(DBZ3_PLATFORM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/platform/android")
+endif()
 if(DBZ3_PLATFORM_DIR)
     include("${DBZ3_PLATFORM_DIR}/platform.cmake")
 endif()
