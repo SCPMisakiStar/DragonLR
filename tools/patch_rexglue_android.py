@@ -66,6 +66,19 @@ patch(
     "Android Vulkan and native-window dependencies",
 )
 
+# SDLActivity loads the SDL3 shared library before libmain.so. The SDK's
+# desktop defaults are static-only, so Android must build the shared SDL3 target.
+patch(
+    "thirdparty/CMakeLists.txt",
+    "if(ANDROID)\n"
+    "    set(SDL_SHARED ON CACHE BOOL \\"\\" FORCE)\n"
+    "    set(SDL_STATIC OFF CACHE BOOL \\"\\" FORCE)\n"
+    "endif()\n\n"
+    "set(SDL_TEST OFF CACHE BOOL \\"\\" FORCE)",
+    "set(SDL_TEST OFF CACHE BOOL \\"\\" FORCE)",
+    "SDL3 Android shared library",
+)
+
 # Do not turn on Linux desktop audio/video drivers when CMake's UNIX predicate
 # also matches Android. SDL selects its native Android backends automatically.
 patch(
