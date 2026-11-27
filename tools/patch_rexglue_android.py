@@ -263,4 +263,221 @@ if "REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT" not in timer:
                           "// REXGLUE_DRAGONLR_ANDROID_THREAD_COMPAT\nnamespace rex::thread {", 1)
     timer_path.write_text(timer, encoding="utf-8")
 
-print(f"Applied Android CMake/window compatibility patches to {root}")
+# Bionic does not implement getcontext/makecontext/swapcontext. ReXGlue fibers
+# are used by the guest kernel scheduler, so preserve them with a cooperative
+# AArch64 context switch that saves the AAPCS64 callee-saved register set.
+fiber_header = root / "include/rex/thread/fiber.h"
+fiber_h = fiber_header.read_text(encoding="utf-8")
+if "REXGLUE_DRAGONLR_ANDROID_FIBER_CONTEXT" not in fiber_h:
+    old_includes = """#if REX_PLATFORM_LINUX || REX_PLATFORM_MAC
+#if REX_PLATFORM_MAC && !defined(_XOPEN_SOURCE)
+// Darwin hides the deprecated ucontext APIs unless _XOPEN_SOURCE is defined
+// before including <ucontext.h>.
+#define _XOPEN_SOURCE 700
+#endif
+#include <ucontext.h>
+#include <cstdint>
+#include <vector>
+#endif"""
+    new_includes = """#if REX_PLATFORM_LINUX || REX_PLATFORM_MAC
+#if REX_PLATFORM_MAC && !defined(_XOPEN_SOURCE)
+// Darwin hides the deprecated ucontext APIs unless _XOPEN_SOURCE is defined
+// before including <ucontext.h>.
+#define _XOPEN_SOURCE 700
+#endif
+#include <ucontext.h>
+#endif
+
+#if REX_PLATFORM_LINUX || REX_PLATFORM_MAC || REX_PLATFORM_ANDROID
+#include <cstdint>
+#include <vector>
+#endif
+
+#if REX_PLATFORM_ANDROID
+// REXGLUE_DRAGONLR_ANDROID_FIBER_CONTEXT
+// Layout is shared with rex_android_fiber_swap() in fiber_android.cpp.
+struct alignas(16) AndroidFiberContext {
+  uint64_t x19_x30[12];
+  uint64_t sp;
+  uint64_t d8_d15[8];
+};
+#endif"""
+    if old_includes not in fiber_h:
+        raise SystemExit("Android patch: fiber.h include block changed")
+    fiber_h = fiber_h.replace(old_includes, new_includes, 1)
+    old_fields = """#elif REX_PLATFORM_LINUX || REX_PLATFORM_MAC
+  ucontext_t context_{};
+  std::vector<uint8_t> stack_;
+  void (*entry_)(void*) = nullptr;
+  void* arg_ = nullptr;
+  bool is_thread_fiber_ = false;
+
+  static void Trampoline();
+#endif"""
+    new_fields = """#elif REX_PLATFORM_LINUX || REX_PLATFORM_MAC
+  ucontext_t context_{};
+  std::vector<uint8_t> stack_;
+  void (*entry_)(void*) = nullptr;
+  void* arg_ = nullptr;
+  bool is_thread_fiber_ = false;
+
+  static void Trampoline();
+#elif REX_PLATFORM_ANDROID
+  AndroidFiberContext context_{};
+  std::vector<uint8_t> stack_;
+  void (*entry_)(void*) = nullptr;
+  void* arg_ = nullptr;
+  bool is_thread_fiber_ = false;
+
+  static void Trampoline();
+#endif"""
+    if old_fields not in fiber_h:
+        raise SystemExit("Android patch: fiber.h private backend block changed")
+    fiber_h = fiber_h.replace(old_fields, new_fields, 1)
+    fiber_header.write_text(fiber_h, encoding="utf-8")
+
+core_cmake_path = root / "src/core/CMakeLists.txt"
+core_cmake = core_cmake_path.read_text(encoding="utf-8")
+if "REXGLUE_DRAGONLR_ANDROID_FIBER_SOURCE" not in core_cmake:
+    if "        fiber_posix.cpp\n" not in core_cmake:
+        raise SystemExit("Android patch: core CMake fiber_posix source marker changed")
+    core_cmake = core_cmake.replace(
+        "        fiber_posix.cpp\n",
+        "        $<$<NOT:$<BOOL:\${ANDROID}>>:fiber_posix.cpp> # REXGLUE_DRAGONLR_ANDROID_FIBER_SOURCE\n",
+        1,
+    )
+    platform_end = """        threading_posix.cpp
+    )
+endif()
+
+# Xenos data-format layer"""
+    platform_new = """        threading_posix.cpp
+    )
+endif()
+
+if(ANDROID)
+    target_sources(rexcore PRIVATE fiber_android.cpp)
+endif()
+
+# Xenos data-format layer"""
+    if platform_end not in core_cmake:
+        raise SystemExit("Android patch: core CMake platform source block changed")
+    core_cmake = core_cmake.replace(platform_end, platform_new, 1)
+    core_cmake_path.write_text(core_cmake, encoding="utf-8")
+
+fiber_android_source = root / "src/core/fiber_android.cpp"
+if not fiber_android_source.exists():
+    fiber_android_source.write_text(r'''/**
+ * @file        rex/core/fiber_android.cpp
+ * @brief       AArch64 Android cooperative fiber backend.
+ *
+ * Bionic does not provide the deprecated ucontext switching functions.
+ * This backend switches contexts using the AAPCS64 callee-saved registers.
+ */
+#include <rex/platform.h>
+#if REX_PLATFORM_ANDROID
+
+#include <rex/thread/fiber.h>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+
+namespace rex::thread {
+
+static_assert(offsetof(AndroidFiberContext, sp) == 96);
+static_assert(offsetof(AndroidFiberContext, d8_d15) == 104);
+static_assert(sizeof(AndroidFiberContext) == 176);
+
+extern "C" __attribute__((naked)) void rex_android_fiber_swap(
+    AndroidFiberContext*, const AndroidFiberContext*) {
+  __asm__ volatile(
+      "stp x19, x20, [x0, #0]\n"
+      "stp x21, x22, [x0, #16]\n"
+      "stp x23, x24, [x0, #32]\n"
+      "stp x25, x26, [x0, #48]\n"
+      "stp x27, x28, [x0, #64]\n"
+      "stp x29, x30, [x0, #80]\n"
+      "mov x9, sp\n"
+      "str x9, [x0, #96]\n"
+      "stp d8, d9, [x0, #104]\n"
+      "stp d10, d11, [x0, #120]\n"
+      "stp d12, d13, [x0, #136]\n"
+      "stp d14, d15, [x0, #152]\n"
+      "ldp x19, x20, [x1, #0]\n"
+      "ldp x21, x22, [x1, #16]\n"
+      "ldp x23, x24, [x1, #32]\n"
+      "ldp x25, x26, [x1, #48]\n"
+      "ldp x27, x28, [x1, #64]\n"
+      "ldp x29, x30, [x1, #80]\n"
+      "ldr x9, [x1, #96]\n"
+      "mov sp, x9\n"
+      "ldp d8, d9, [x1, #104]\n"
+      "ldp d10, d11, [x1, #120]\n"
+      "ldp d12, d13, [x1, #136]\n"
+      "ldp d14, d15, [x1, #152]\n"
+      "ret\n");
+}
+
+thread_local Fiber* Fiber::tls_current_ = nullptr;
+
+Fiber* Fiber::ConvertCurrentThread() {
+  auto* fiber = new Fiber();
+  fiber->is_thread_fiber_ = true;
+  tls_current_ = fiber;
+  return fiber;
+}
+
+Fiber* Fiber::Create(size_t stack_size, void (*entry)(void*), void* arg) {
+  if (!entry || stack_size < 16 * 1024) {
+    return nullptr;
+  }
+
+  auto* fiber = new Fiber();
+  fiber->entry_ = entry;
+  fiber->arg_ = arg;
+  fiber->stack_.resize(stack_size);
+
+  const uintptr_t stack_top =
+      reinterpret_cast<uintptr_t>(fiber->stack_.data() + fiber->stack_.size()) &
+      ~static_cast<uintptr_t>(0xF);
+  fiber->context_.sp = stack_top;
+  fiber->context_.x19_x30[11] =
+      reinterpret_cast<uintptr_t>(&Fiber::Trampoline);
+  return fiber;
+}
+
+void Fiber::Trampoline() {
+  Fiber* fiber = tls_current_;
+  assert(fiber && fiber->entry_);
+  fiber->entry_(fiber->arg_);
+  // ReXGlue fiber entry points must not return to an absent continuation.
+  std::terminate();
+}
+
+void Fiber::SwitchTo(Fiber* target) {
+  assert(target && target != tls_current_);
+  Fiber* from = tls_current_;
+  assert(from && "ConvertCurrentThread must precede SwitchTo");
+  tls_current_ = target;
+  rex_android_fiber_swap(&from->context_, &target->context_);
+}
+
+void Fiber::Destroy() {
+  if (is_thread_fiber_) {
+    assert(this == tls_current_);
+    tls_current_ = nullptr;
+  } else {
+    assert(this != tls_current_ && "Destroy called on the currently running fiber");
+  }
+  delete this;
+}
+
+}  // namespace rex::thread
+
+#endif  // REX_PLATFORM_ANDROID
+''', encoding="utf-8")
+
+print(f"Applied Android CMake/window/timer/fiber compatibility patches to {root}")
+
